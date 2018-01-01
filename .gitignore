@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 .idea
 geckodriver.log
 
@@ -104,4 +103,3 @@ ENV/
 
 # mypy
 .mypy_cache/
->>>>>>> a86c366509bd388f0816a7b6546da64b9cb5f183

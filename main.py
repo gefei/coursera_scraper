@@ -35,7 +35,7 @@ def get_week(browser, week_no, args):
         print('Downloading {}'.format(download_href))
         r = requests.get(download_href, auth=(args.user, args.password), stream=True)
         if r.status_code == 200:
-            with open('week{}_{}.mp4'.format(week_no, idx), 'wb') as f:
+            with open('week{0:02d}_{1:02d}.mp4'.format(week_no, idx), 'wb') as f:
                 r.raw.decode_content = True
                 shutil.copyfileobj(r.raw, f)
                 f.close()
@@ -47,6 +47,8 @@ if __name__ == '__main__':
     parser.add_argument('--user', type=str, required=True, help='Coursera user name')
     parser.add_argument('--password', type=str, required=True, help='Coursera user password')
     args = parser.parse_args()
+    if args.home[-1] != '/':
+        args.home += '/'
 
     profile  = webdriver.ChromeOptions()
     browser  = webdriver.Chrome(executable_path='/usr/local/bin/chromedriver')
