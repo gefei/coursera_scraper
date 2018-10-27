@@ -16,17 +16,35 @@ def get_parent(item):
     return parent
 
 
+# Find all links to video pages in a list of modules.
+# By video page, I mean a page dedicated to a video, not a direct
+# link to the video itself.
+def find_video_pages(webelems):
+    urls = []
+    for elem in webelems:
+        module_type = elem.find_element_by_css_selector("strong")
+        if module_type is not None:
+            if module_type.text.lower().startswith('video'):
+                a = elem.find_element_by_tag_name('a')
+                url = a.get_attribute('href')
+                urls.append(url)
+                try:
+                    title = elem.find_element_by_class_name('rc-WeekItemName')
+                    title = title.text.split('\n')[-1]
+                    print('Found {} @ {}'.format(title,url))
+                except:
+                    pass # title is optional
+    return urls
+
 def get_week(browser, week_no, args):
     week_url = urljoin(args.home, 'week/{}'.format(week_no))
     browser.get(week_url)
     time.sleep(2)
-    items = browser.find_elements_by_class_name('cif-item-video')
-    urls = []
-    for it in items:
-        anchor = get_parent(it)
-        href = anchor.get_attribute('href')
-        urls.append(href)
-    for idx, href in enumerate(urls):
+
+    # each module is a video, reading, lecture etc.
+    modules = browser.find_elements_by_css_selector('.rc-ModuleLessons li')
+    video_pages = find_video_pages(modules)
+    for idx, href in enumerate(video_pages):
         browser.get(href)
         time.sleep(1.5)
         download_li   = browser.find_element_by_class_name('rc-LectureDownloadItem')
@@ -46,34 +64,31 @@ if __name__ == '__main__':
     parser.add_argument('--home', type=str, required=True, help='Home url of the course, e.g., https://www.coursera.org/learn/python-machine-learning/home/')
     parser.add_argument('--user', type=str, required=True, help='Coursera user name')
     parser.add_argument('--password', type=str, required=True, help='Coursera user password')
+    parser.add_argument('--chromedriver', type=str, required=False, default='/usr/local/bin/chromedriver', help='Path to the chromedriver executable.')
     args = parser.parse_args()
     if args.home[-1] != '/':
         args.home += '/'
 
     profile  = webdriver.ChromeOptions()
-    browser  = webdriver.Chrome(executable_path='/usr/local/bin/chromedriver')
+    browser  = webdriver.Chrome(executable_path=args.chromedriver)
     browser.implicitly_wait(10)
     browser.get(args.home)
 
-    browser.find_element_by_id('emailInput-input').send_keys(args.user)
-    browser.find_element_by_id('passwordInput-input').send_keys(args.password)
+    browser.find_element_by_css_selector("input[id^='emailInput']").send_keys(args.user)
+    browser.find_element_by_css_selector("input[id^='passwordInput']").send_keys(args.password)
     browser.find_elements_by_xpath('//button')[1].click()
 
     # course hoome
     time.sleep(3)
     anchors = browser.find_elements_by_tag_name('a')
-    reg = re.compile(r'Week (\d+)')
 
-    count = 0
-    for anchor in anchors:
-        try:
-            m = reg.match(anchor.text)
-            if m:
-                count += 1
-        except Exception as e:
-            print(e)
+    # find the final week
+    week_links = browser.find_elements_by_css_selector('.rc-WeekCollectionNavigationItem a')
+    final_week_url = week_links[-1].get_attribute('href')
+    match = re.findall(r"/week/(\d+)", final_week_url)
+    final_week = int(match[0])
 
-    for i in range(1, count+1):
+    for i in range(1, final_week+1):
         get_week(browser, i, args)
         time.sleep(2)
 
