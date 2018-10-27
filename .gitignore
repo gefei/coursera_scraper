@@ -1,3 +1,6 @@
+# Video files (possibly downloaded coursera files)
+*.mp4
+
 .idea
 geckodriver.log
 
